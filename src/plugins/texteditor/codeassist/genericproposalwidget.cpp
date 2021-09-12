@@ -278,6 +278,7 @@ public:
     QTimer m_infoTimer;
     CodeAssistant *m_assistant = nullptr;
     bool m_autoWidth = true;
+    bool sendescape = true;
 
     void handleActivation(const QModelIndex &modelIndex);
     void maybeShowInfoTip();
@@ -476,6 +477,12 @@ void GenericProposalWidget::abort()
     deleteLater();
     if (isVisible())
         close();
+
+    if (d->sendescape)
+    {
+	    auto event = new QKeyEvent(QKeyEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+	    QApplication::sendEvent(const_cast<QWidget*>(d->m_underlyingWidget), event);
+    }
 }
 
 bool GenericProposalWidget::updateAndCheck(const QString &prefix)
@@ -633,6 +640,7 @@ bool GenericProposalWidget::eventFilter(QObject *o, QEvent *e)
         case Qt::Key_Tab:
         case Qt::Key_Return:
         case Qt::Key_Enter:
+            d->sendescape = false;
             abort();
             activateCurrentProposalItem();
             return true;
@@ -683,6 +691,7 @@ bool GenericProposalWidget::eventFilter(QObject *o, QEvent *e)
                 d->m_model->proposalItem(d->m_completionListView->currentIndex().row());
             if (item->prematurelyApplies(typedChar)
                     && (d->m_reason == ExplicitlyInvoked || item->text().endsWith(typedChar))) {
+				d->sendescape =  false;
                 abort();
                 emit proposalItemActivated(item);
                 return true;
